@@ -66,7 +66,7 @@ exports.getHealth = async (req, res) => {
     });
 
     const matchedCount = await prisma.rideRequest.count({
-      where: { status: 'MATCHED' },
+      where: { status: 'RIDERS_MATCHED' },
     });
 
     const cancelledCount = await prisma.rideRequest.count({
