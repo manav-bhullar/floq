@@ -83,13 +83,13 @@ export default function TopNav() {
             <p>Are you sure you want to sign out of your account?</p>
             <div className="logout-modal-actions">
               <button
-                className="btn-cancel"
+                className="btn btn-tonal"
                 onClick={() => setShowModal(false)}
               >
                 Cancel
               </button>
               <button
-                className="btn-confirm"
+                className="btn btn-danger"
                 onClick={() => {
                   setShowModal(false);
                   logout();

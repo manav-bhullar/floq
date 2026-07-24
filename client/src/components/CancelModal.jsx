@@ -16,8 +16,9 @@ export default function CancelModal({ isOpen, onClose, onConfirm }) {
         if (!modalRef.current) return;
 
         const focusableElements = modalRef.current.querySelectorAll(
-          'a[href], button, textarea, input[type="text"], input[type="radio"], input[type="checkbox"], select'
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
         );
+        if (focusableElements.length === 0) return;
         const firstElement = focusableElements[0];
         const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -70,7 +71,7 @@ export default function CancelModal({ isOpen, onClose, onConfirm }) {
           co-riders. They will be placed back in the queue. Are you sure?
         </p>
         <div className="modal-actions">
-          <button className="btn btn-secondary" onClick={onClose}>
+          <button className="btn btn-tonal" onClick={onClose}>
             Close
           </button>
           <button className="btn btn-danger" onClick={onConfirm}>

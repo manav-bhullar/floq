@@ -147,30 +147,3 @@
   margin-top: 16px;
 }
 
-.logout-modal-actions button {
-  padding: 10px 24px;
-  border-radius: var(--radius-full);
-  font: var(--type-label-medium);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--duration-short) var(--ease-standard);
-  border: none;
-}
-
-.btn-cancel {
-  background-color: var(--color-md-surface-container-high);
-  color: var(--color-md-on-surface);
-}
-
-.btn-cancel:hover {
-  background-color: var(--color-md-surface-container-highest);
-}
-
-.btn-confirm {
-  background-color: #b3261e; /* Error */
-  color: #ffffff;
-}
-
-.btn-confirm:hover {
-  background-color: #8c1d18;
-}

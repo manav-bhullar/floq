@@ -150,13 +150,8 @@ export default function TripScreen() {
 
           <div className="trip-actions-row">
             <button
-              className="btn btn-secondary"
-              style={{
-                width: "100%",
-                background: "transparent",
-                border: "1px solid var(--color-md-outline)",
-                color: "var(--color-md-on-surface)",
-              }}
+              className="btn btn-danger"
+              style={{ width: "100%" }}
               onClick={() => setShowCancelModal(true)}
             >
               Cancel Trip
