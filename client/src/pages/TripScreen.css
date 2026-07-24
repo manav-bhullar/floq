@@ -206,3 +206,24 @@
   font: var(--type-label-medium);
   color: var(--color-md-on-surface-variant);
 }
+
+/* ============================================================
+   PRIMARY STATS & SAVINGS BANNER
+   ============================================================ */
+.trip-primary-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trip-savings-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-md-express-ride-done);
+  color: var(--color-md-on-primary-container);
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font: var(--type-label-medium);
+  font-weight: 600;
+}
