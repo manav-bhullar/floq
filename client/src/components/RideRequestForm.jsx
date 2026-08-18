@@ -412,7 +412,7 @@ export default function RideRequestForm({ onLocationSelect }) {
 
       <button
         type="submit"
-        className="fab-extended"
+        className={`fab-extended ${loading ? "loading" : ""}`}
         style={{ width: "100%", marginTop: "16px" }}
         disabled={!canSubmit}
       >
