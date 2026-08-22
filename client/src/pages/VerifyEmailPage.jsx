@@ -133,6 +133,7 @@ export default function VerifyEmailPage() {
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   className="otp-input"
                   disabled={loading}
+                  aria-label={`Digit ${index + 1} of OTP`}
                 />
               ))}
             </div>
