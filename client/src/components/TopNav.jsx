@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useLocation, Link } from "react-router-dom";
 import { useApp } from "../context/AppContext";
@@ -9,6 +9,58 @@ export default function TopNav() {
   const { state } = useApp();
   const location = useLocation();
   const [showModal, setShowModal] = useState(false);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    if (!showModal) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setShowModal(false);
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!modalRef.current) return;
+
+        const focusableElements = modalRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            lastElement.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            firstElement.focus();
+            e.preventDefault();
+          }
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Focus the first interactive element when opened
+    if (modalRef.current) {
+      const focusableElements = modalRef.current.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusableElements.length > 0) {
+        focusableElements[0].focus();
+      }
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [showModal]);
 
   if (!isAuthenticated) return null;
 
@@ -77,9 +129,16 @@ export default function TopNav() {
       </div>
 
       {showModal && (
-        <div className="logout-modal-backdrop">
-          <div className="logout-modal glass-card">
-            <h3>Sign Out</h3>
+        <div className="logout-modal-backdrop" onClick={() => setShowModal(false)}>
+          <div
+            className="logout-modal glass-card"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-modal-title"
+            ref={modalRef}
+          >
+            <h3 id="logout-modal-title">Sign Out</h3>
             <p>Are you sure you want to sign out of your account?</p>
             <div className="logout-modal-actions">
               <button
