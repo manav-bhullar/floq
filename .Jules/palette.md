@@ -1,0 +1,3 @@
+## 2026-08-28 - Link custom UI controls to labels for accessibility
+**Learning:** In the RideRequestForm, custom components acting as dropdown selects (e.g. for locations) and mock selects (e.g. for picking time) were missing explicit programmatic association with their labels, making them inaccessible for screen readers. Using `id` directly is error prone.
+**Action:** Always use React's `useId()` to dynamically generate `id`s and link them via `htmlFor` (on labels) and `id` (on inputs) or `aria-labelledby` (on custom interactive wrappers like buttons mocking a select) to ensure a solid accessible experience without risking id collisions.
