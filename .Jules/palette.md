@@ -1,0 +1,3 @@
+## 2025-05-18 - Accessibility on Custom Form Components
+**Learning:** Custom UI wrappers in this codebase (like `LocationInput` containing a custom text input and search dropdown, or the "Preferred Time" widget which is actually a `<button>` masquerading as a select) frequently lack proper ID bindings to their respective labels, breaking screen reader focus flow.
+**Action:** Always dynamically generate unique IDs using `useId()` when creating or modifying these custom wrapper components, and explicitly link their labels via `htmlFor` (for inputs) or `aria-labelledby` (for buttons/divs acting as inputs).
