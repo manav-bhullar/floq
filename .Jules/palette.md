@@ -1,0 +1,3 @@
+## 2026-08-31 - Linking Mock Inputs with aria-labelledby
+**Learning:** When using custom UI components (like a `<button>` to mock a datetime select dropdown or location search), screen readers can't natively associate a `<label>` with them just by using `htmlFor`. A unique `id` and `aria-labelledby` are necessary to establish the semantic link explicitly.
+**Action:** Always generate a dynamic ID (using `useId()` in React) and apply it to the label, then reference that ID in the `aria-labelledby` attribute of the mock-input interactive element, matching the existing `id` pattern used for standard inputs.
