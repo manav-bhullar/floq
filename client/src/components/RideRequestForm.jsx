@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { useApp } from "../context/AppContext";
 
 import { createRideRequest, getRideRequests } from "../api/rideRequests";
@@ -28,6 +28,7 @@ function LocationInput({
   allowCurrentLocation,
   referenceLocation,
 }) {
+  const inputId = useId();
   const [query, setQuery] = useState(value?.displayName || "");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -156,8 +157,9 @@ function LocationInput({
   return (
     <div className="location-input-wrapper" ref={wrapperRef}>
       <div className="md3-input-group" style={{ position: "relative" }}>
-        <label className="md3-label">{label}</label>
+        <label htmlFor={inputId} className="md3-label">{label}</label>
         <input
+          id={inputId}
           className="md3-input"
           style={allowCurrentLocation ? { paddingRight: "48px" } : {}}
           type="text"
@@ -340,6 +342,9 @@ export default function RideRequestForm({ onLocationSelect }) {
 
   const canSubmit = !!pickup && !!drop && !!preferredTime && !loading;
 
+  const datetimeLabelId = useId();
+  const datetimeButtonId = useId();
+
   return (
     <form className="ride-request-form" onSubmit={handleSubmit}>
       <h2 className="form-title">Request a Ride</h2>
@@ -371,8 +376,10 @@ export default function RideRequestForm({ onLocationSelect }) {
       />
 
       <div className="md3-input-group datetime-input-group">
-        <label className="md3-label">Preferred Time</label>
+        <label id={datetimeLabelId} htmlFor={datetimeButtonId} className="md3-label">Preferred Time</label>
         <button
+          id={datetimeButtonId}
+          aria-labelledby={datetimeLabelId}
           type="button"
           className="md3-input datetime-expressive"
           onClick={() => setDatePickerOpen(true)}
