@@ -117,7 +117,7 @@ export default function VerifyEmailPage() {
             </p>
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert" aria-live="assertive">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="otp-container">
