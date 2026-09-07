@@ -81,6 +81,7 @@ export default function LoginPage() {
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <svg

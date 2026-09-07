@@ -114,6 +114,7 @@ export default function RegisterPage() {
                   className="password-toggle-btn"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
                     <svg
@@ -168,6 +169,9 @@ export default function RegisterPage() {
                   className="password-toggle-btn"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={
+                    showConfirmPassword ? "Hide password" : "Show password"
+                  }
+                  title={
                     showConfirmPassword ? "Hide password" : "Show password"
                   }
                 >
