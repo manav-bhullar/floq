@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-export default function CancelModal({ isOpen, onClose, onConfirm }) {
+export default function CancelModal({ isOpen, onClose, onConfirm, isCancelling }) {
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -70,11 +70,16 @@ export default function CancelModal({ isOpen, onClose, onConfirm }) {
           co-riders. They will be placed back in the queue. Are you sure?
         </p>
         <div className="modal-actions">
-          <button className="btn btn-secondary" onClick={onClose}>
+          <button className="btn btn-secondary" onClick={onClose} disabled={isCancelling}>
             Close
           </button>
-          <button className="btn btn-danger" onClick={onConfirm}>
-            Confirm Cancel
+          <button
+            className="btn btn-danger"
+            onClick={onConfirm}
+            disabled={isCancelling}
+            aria-busy={isCancelling}
+          >
+            {isCancelling ? "Cancelling..." : "Confirm Cancel"}
           </button>
         </div>
       </div>
