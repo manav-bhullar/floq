@@ -1,0 +1,3 @@
+## 2024-11-20 - Accessibility for custom component wrappers (LocationInput)
+**Learning:** When custom UI components (like `LocationInput`) wrap native inputs and present dropdown lists, screen readers often lose context if the parent wrapper is just a `div` and the input lacks an explicitly linked label. Additionally, `useId` provides a stable way to dynamically link labels to inputs and lists without hardcoding IDs, which is essential when the same component is used multiple times on a page (e.g., Pickup vs Dropoff).
+**Action:** Always use React's `useId` to generate unique IDs for custom input wrappers. Link labels with `htmlFor` and use `aria-labelledby`/`aria-controls` for dropdown lists/options to maintain screen reader context.

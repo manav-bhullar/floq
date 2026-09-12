@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { useApp } from "../context/AppContext";
 
 import { createRideRequest, getRideRequests } from "../api/rideRequests";
@@ -28,6 +28,8 @@ function LocationInput({
   allowCurrentLocation,
   referenceLocation,
 }) {
+  const inputId = useId();
+  const listboxId = useId();
   const [query, setQuery] = useState(value?.displayName || "");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -37,6 +39,7 @@ function LocationInput({
   const latestQueryRef = useRef("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setQuery(value?.displayName || "");
   }, [value]);
 
@@ -138,7 +141,7 @@ function LocationInput({
             setQuery("");
             alert("Could not determine your address.");
           }
-        } catch (err) {
+        } catch {
           setQuery("");
           alert("Error fetching location.");
         } finally {
@@ -156,8 +159,9 @@ function LocationInput({
   return (
     <div className="location-input-wrapper" ref={wrapperRef}>
       <div className="md3-input-group" style={{ position: "relative" }}>
-        <label className="md3-label">{label}</label>
+        <label className="md3-label" htmlFor={inputId}>{label}</label>
         <input
+          id={inputId}
           className="md3-input"
           style={allowCurrentLocation ? { paddingRight: "48px" } : {}}
           type="text"
@@ -166,6 +170,10 @@ function LocationInput({
           onChange={handleChange}
           onFocus={() => setOpen(true)}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-autocomplete="list"
         />
         {allowCurrentLocation && (
           <button
@@ -202,7 +210,7 @@ function LocationInput({
       </div>
 
       {open && (
-        <div className="location-dropdown">
+        <div className="location-dropdown" id={listboxId} role="listbox">
           {loading && (
             <div className="location-dropdown-item location-loading">
               Searching...
@@ -220,7 +228,7 @@ function LocationInput({
               <button
                 key={index}
                 type="button"
-                className="location-dropdown-item"
+                className="location-dropdown-item" role="option"
                 onClick={() => handleSelect(place)}
               >
                 {place.displayName}
@@ -233,7 +241,8 @@ function LocationInput({
 }
 
 export default function RideRequestForm({ onLocationSelect }) {
-  const { state, dispatch } = useApp();
+  const timeLabelId = useId();
+  const { dispatch } = useApp();
 
   const getDefaultTime = () => {
     const now = new Date();
@@ -371,11 +380,14 @@ export default function RideRequestForm({ onLocationSelect }) {
       />
 
       <div className="md3-input-group datetime-input-group">
-        <label className="md3-label">Preferred Time</label>
+        <label className="md3-label" id={timeLabelId}>Preferred Time</label>
         <button
           type="button"
           className="md3-input datetime-expressive"
           onClick={() => setDatePickerOpen(true)}
+          aria-labelledby={timeLabelId}
+          aria-haspopup="dialog"
+          aria-expanded={isDatePickerOpen}
           style={{
             textAlign: "left",
             cursor: "pointer",
