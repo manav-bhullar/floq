@@ -1,0 +1,3 @@
+## 2024-05-18 - [Missing Keyboard Handlers for Div Buttons]
+**Learning:** In Floq, several interactive UI elements (like `.waiting-status-block`) use `onClick` on `div` elements without corresponding `onKeyDown` handlers, `role="button"`, or `tabIndex`. This breaks keyboard navigation completely for primary actions like expanding matched passenger details.
+**Action:** When auditing React code for this app, proactively search for `onClick` attached to non-interactive elements (like `div` or `span`) and upgrade them to accessible buttons using `role="button"`, `tabIndex={0}`, and an `onKeyDown` handler to support Enter/Space activation.

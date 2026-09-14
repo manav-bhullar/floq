@@ -124,6 +124,12 @@
   margin-bottom: 24px;
 }
 
+.waiting-status-block:focus-visible {
+  outline: 2px solid var(--color-md-primary);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
 .waiting-timer {
   font-family: monospace;
   font-size: 16px;
@@ -228,10 +234,4 @@
     max-width: 500px;
     border-radius: var(--radius-2xl);
   }
-}
-
-.drag-handle-wrapper:focus-visible {
-  outline: 2px solid var(--color-md-primary);
-  outline-offset: 2px;
-  border-radius: 4px;
 }

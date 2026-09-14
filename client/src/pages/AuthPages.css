@@ -161,6 +161,11 @@
   color: var(--color-md-on-surface);
 }
 
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-md-primary);
+  outline-offset: 2px;
+}
+
 .auth-submit-btn {
   background: var(--color-md-tertiary);
   color: white;
