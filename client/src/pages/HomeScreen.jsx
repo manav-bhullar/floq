@@ -75,6 +75,7 @@ export default function HomeScreen() {
             onClick={() => setIsExpanded(!isExpanded)}
             role="button"
             aria-label="Toggle details"
+            aria-expanded={isExpanded}
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -94,6 +95,7 @@ export default function HomeScreen() {
               onClick={() => setIsExpanded(true)}
               role="button"
               aria-label="Open destination search"
+              aria-expanded={isExpanded}
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {

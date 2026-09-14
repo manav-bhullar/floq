@@ -99,6 +99,7 @@ export default function WaitingScreen() {
             onClick={() => setIsExpanded(!isExpanded)}
             role="button"
             aria-label="Toggle details"
+            aria-expanded={isExpanded}
             tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -119,6 +120,15 @@ export default function WaitingScreen() {
             className="waiting-status-block"
             onClick={() => !isExpanded && setIsExpanded(true)}
             style={{ cursor: !isExpanded ? "pointer" : "default" }}
+            role="button"
+            aria-expanded={isExpanded}
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (!isExpanded && (e.key === "Enter" || e.key === " ")) {
+                setIsExpanded(true);
+                e.preventDefault();
+              }
+            }}
           >
             <p className="waiting-timer">
               Waiting for {formatElapsed(elapsed)}
