@@ -1,0 +1,3 @@
+## 2026-09-15 - Dynamic ARIA Labeling for Custom UI Components
+**Learning:** When building accessible custom UI components (like dropdown wrappers or buttons mocking selects in React), explicitly linking custom wrapper roles (`listbox`, `option`) and dynamically generated IDs (via `useId`) significantly improves screen reader traversal accuracy over using standard inputs without associated `id` or `htmlFor`.
+**Action:** Always dynamically generate and link IDs via `htmlFor`, `aria-labelledby`, `aria-controls`, and `id` when constructing pseudo-selects, combo boxes, or interactive wrappers to maintain accessible focus and correct component association.

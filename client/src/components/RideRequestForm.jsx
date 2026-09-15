@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { useApp } from "../context/AppContext";
 
 import { createRideRequest, getRideRequests } from "../api/rideRequests";
@@ -35,6 +35,8 @@ function LocationInput({
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
   const latestQueryRef = useRef("");
+  const inputId = useId();
+  const listboxId = useId();
 
   useEffect(() => {
     setQuery(value?.displayName || "");
@@ -156,8 +158,9 @@ function LocationInput({
   return (
     <div className="location-input-wrapper" ref={wrapperRef}>
       <div className="md3-input-group" style={{ position: "relative" }}>
-        <label className="md3-label">{label}</label>
+        <label className="md3-label" htmlFor={inputId}>{label}</label>
         <input
+          id={inputId}
           className="md3-input"
           style={allowCurrentLocation ? { paddingRight: "48px" } : {}}
           type="text"
@@ -166,6 +169,10 @@ function LocationInput({
           onChange={handleChange}
           onFocus={() => setOpen(true)}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={open ? listboxId : undefined}
+          aria-haspopup="listbox"
         />
         {allowCurrentLocation && (
           <button
@@ -202,15 +209,15 @@ function LocationInput({
       </div>
 
       {open && (
-        <div className="location-dropdown">
+        <div id={listboxId} role="listbox" className="location-dropdown">
           {loading && (
-            <div className="location-dropdown-item location-loading">
+            <div role="option" aria-selected="false" className="location-dropdown-item location-loading">
               Searching...
             </div>
           )}
 
           {!loading && query.trim().length >= 3 && results.length === 0 && (
-            <div className="location-dropdown-item location-empty">
+            <div role="option" aria-selected="false" className="location-dropdown-item location-empty">
               No results found
             </div>
           )}
@@ -220,6 +227,8 @@ function LocationInput({
               <button
                 key={index}
                 type="button"
+                role="option"
+                aria-selected="false"
                 className="location-dropdown-item"
                 onClick={() => handleSelect(place)}
               >
@@ -250,6 +259,7 @@ export default function RideRequestForm({ onLocationSelect }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isDatePickerOpen, setDatePickerOpen] = useState(false);
+  const timeLabelId = useId();
 
   const formatDisplayTime = (isoString) => {
     if (!isoString) return "";
@@ -371,11 +381,12 @@ export default function RideRequestForm({ onLocationSelect }) {
       />
 
       <div className="md3-input-group datetime-input-group">
-        <label className="md3-label">Preferred Time</label>
+        <label id={timeLabelId} className="md3-label">Preferred Time</label>
         <button
           type="button"
           className="md3-input datetime-expressive"
           onClick={() => setDatePickerOpen(true)}
+          aria-labelledby={timeLabelId}
           style={{
             textAlign: "left",
             cursor: "pointer",
