@@ -1,0 +1,3 @@
+## 2026-09-19 - OTP Input Accessibility Enhancement
+**Learning:** React component maps rendering individual OTP inputs (like in `VerifyEmailPage.jsx`) inherently lack context for screen readers when only `type="text"` and `inputMode="numeric"` are provided. Without specific labels, users relying on assistive tech struggle to understand which digit they are entering or navigating.
+**Action:** Always dynamically generate and apply `aria-label` attributes to mapped input elements (e.g., `aria-label={\`Digit ${index + 1} of 6\`}`) to ensure screen readers provide positional context during keyboard navigation.
