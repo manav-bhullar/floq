@@ -128,6 +128,7 @@ export default function VerifyEmailPage() {
                   inputMode="numeric"
                   maxLength="6"
                   value={digit}
+                  aria-label={`Digit ${index + 1} of 6`}
                   ref={(el) => (inputRefs.current[index] = el)}
                   onChange={(e) => handleChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
