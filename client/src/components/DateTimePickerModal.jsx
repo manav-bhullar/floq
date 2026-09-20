@@ -1,9 +1,23 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { createPortal } from "react-dom";
 import "./DateTimePicker.css";
 
 const DAYS_IN_MONTH = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const DAYS_OF_WEEK = ["S", "M", "T", "W", "T", "F", "S"];
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
 
 export default function DateTimePickerModal({
   isOpen,
@@ -11,6 +25,7 @@ export default function DateTimePickerModal({
   onConfirm,
   initialDate,
 }) {
+  const titleId = useId();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState("12:00 AM");
@@ -148,6 +163,8 @@ export default function DateTimePickerModal({
           type="button"
           className={`calendar-day ${isSelected ? "selected" : ""} ${isToday && !isSelected ? "today" : ""}`}
           onClick={() => setSelectedDate(new Date(year, month, d))}
+          aria-label={`${MONTH_NAMES[month]} ${d}, ${year}`}
+          aria-selected={isSelected}
         >
           {d}
         </button>,
@@ -156,26 +173,14 @@ export default function DateTimePickerModal({
     return days;
   };
 
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-
   return createPortal(
     <div className="modal-backdrop dt-backdrop" onClick={onClose}>
       <div
         className="modal expressive-calendar-modal"
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
       >
         <div className="calendar-header">
           <button
@@ -194,8 +199,8 @@ export default function DateTimePickerModal({
               <path d="M560-240 320-480l240-240 56 56-184 184 184 184-56 56Z" />
             </svg>
           </button>
-          <h3>
-            {monthNames[month]} {year}
+          <h3 id={titleId}>
+            {MONTH_NAMES[month]} {year}
           </h3>
           <button
             type="button"
