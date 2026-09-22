@@ -13,8 +13,10 @@ export default function TripScreen() {
   const { state, dispatch } = useApp();
   const { user } = useAuth();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   async function confirmCancel() {
+    setIsCancelling(true);
     try {
       await cancelRideRequest(
         state.rideRequest?.id || state.trip?.rideRequestId,
@@ -36,6 +38,7 @@ export default function TripScreen() {
         },
       });
     } finally {
+      setIsCancelling(false);
       setShowCancelModal(false);
     }
   }
@@ -169,6 +172,7 @@ export default function TripScreen() {
         isOpen={showCancelModal}
         onClose={() => setShowCancelModal(false)}
         onConfirm={confirmCancel}
+        isCancelling={isCancelling}
       />
     </div>
   );
