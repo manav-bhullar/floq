@@ -1,0 +1,3 @@
+## 2026-09-25 - Explicit Label Linking for Custom Elements
+**Learning:** In custom React UI components (like a div wrapping an input, or a button acting as a select dropdown), standard label associations often fail if `id`s aren't properly maintained. When inputs are mapped or reused, hardcoded IDs create conflicts and break screen reader navigation.
+**Action:** Use React's `useId` hook to dynamically generate unique IDs for custom input elements. For standard inputs, use `id` on the input and `htmlFor` on the label. For custom interactive elements (like a button acting as a selector), use `id` on the label and `aria-labelledby` on the interactive element.
