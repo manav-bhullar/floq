@@ -1,0 +1,3 @@
+## 2026-10-01 - Form Accessibility Patterns
+**Learning:** When rendering mapped input elements (like OTP fields), explicitly setting an `aria-label` that includes the positional context (e.g., `Digit 1 of 6`) is crucial. Otherwise, screen readers navigating the map lose context of which part of the input they are on. Additionally, dynamic form error messages require `role="alert"` and `aria-live="assertive"` on their container to be immediately announced to screen reader users when validation fails or API errors occur.
+**Action:** Always include positional `aria-label` attributes for individually mapped input fields that form a single logical input (like OTP). Always ensure error message containers use `role="alert"` and `aria-live="assertive"`.
