@@ -117,7 +117,11 @@ export default function VerifyEmailPage() {
             </p>
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && (
+            <div className="auth-error" role="alert" aria-live="assertive">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="otp-container">
@@ -133,6 +137,7 @@ export default function VerifyEmailPage() {
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   className="otp-input"
                   disabled={loading}
+                  aria-label={`Digit ${index + 1} of 6`}
                 />
               ))}
             </div>
@@ -140,7 +145,7 @@ export default function VerifyEmailPage() {
             <button
               type="submit"
               className={`auth-submit-btn ${loading ? "loading" : ""}`}
-              disabled={loading || otp.join("").length !== 6}
+              disabled={loading}
             >
               {loading ? "Verifying..." : "Verify Email"}
             </button>
