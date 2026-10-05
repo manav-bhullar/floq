@@ -124,7 +124,7 @@ exports.getTripById = async (req, res) => {
 		return success(res, payload);
 	} catch (err) {
 		console.error('Get trip by id error:', err);
-		return error(res, err.message || 'Failed to fetch trip', 500);
+		return error(res, err.message || 'Failed to fetch trip', err.code || 500);
 	}
 };
 

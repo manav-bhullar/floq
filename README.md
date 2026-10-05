@@ -114,7 +114,7 @@ k6 run server/load-tests/matching-scenario.js
 | **Background Jobs** | `node-cron` |
 
 ## Testing
-The repository includes 24 test files covering route optimization, cancellation logic, Redis integration phases (OTP, auth, caching, rate limiting, locking), and Razorpay payment flows.
+The repository includes test suites covering route optimization, cancellation logic, Redis integration phases (OTP, auth, caching, rate limiting, locking), and Razorpay payment flows.
 
 ```bash
 cd server
@@ -166,6 +166,10 @@ npm run test:unit     # run unit tests only (no external services)
 ## Known Limitations / What I'd Improve Next
 - **Matching Engine Scaling:** Currently, the matching engine pulls pending requests in batches. If the pending pool grows massively, scoring every possible pair $O(n^2)$ will bottleneck. Next step: Implement PostGIS or Redis geospatial indexing to only score pairs within a 5km radius.
 - **Driver Rejection Handling:** The `DriverTrip` model supports a `CANCELLED` state, but there isn't a robust mechanism to rapidly re-queue a `RIDERS_MATCHED` trip to a different driver if the first driver rejects it, leading to potential auto-expiry.
+
+## Lifecycle Updates
+
+The rider client fetches its current state on mount and refreshes it on private `trip_updated` and `ride_request_updated` socket events. It also refreshes on reconnect and when the tab regains focus. Matching, expansion, cancellation/requeue, driver acceptance, start, completion, and expiry publish events after database commit and cache invalidation. Lifecycle state is updated atomically; completed trips stay available for the summary screen. Periodic ride/trip polling has been removed.
 
 ## Render Deployment
 

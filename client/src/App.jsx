@@ -8,13 +8,9 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import { useApp, AppContext } from "./context/AppContext";
-import { useAuth, AuthContext } from "./context/AuthContext";
-import { useAppInit } from "./hooks/useAppInit";
-import { useRideRequestPoller } from "./hooks/useRideRequestPoller";
-import { useTripPoller } from "./hooks/useTripPoller";
+import { useApp } from "./context/AppContext";
+import { useAuth } from "./context/AuthContext";
 import { useGlobalSocket } from "./hooks/useGlobalSocket";
-import { getCurrentTrip } from "./api/trips";
 import { getRouteForUiState } from "./utils/routeUtils";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -31,37 +27,17 @@ import LoadingState from "./components/LoadingState";
 import TopNav from "./components/TopNav";
 
 export default function App() {
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  useAppInit();
-  useRideRequestPoller();
-  useTripPoller();
   useGlobalSocket();
 
   const userId = user?.id;
   const targetRoute = userId
     ? getRouteForUiState(state.uiState, state.trip?.id)
     : null;
-
-  useEffect(() => {
-    if (!userId) return;
-    if (state.loading.init) return;
-    if (state.trip) return;
-    if (state.uiState !== "MATCHED") return;
-
-    getCurrentTrip(userId)
-      .then((trip) => {
-        if (trip) {
-          dispatch({ type: "SET_TRIP", payload: trip });
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch trip after MATCHED:", err);
-      });
-  }, [state.uiState, state.trip, state.loading.init, userId, dispatch]);
 
   // 🔥 Lifecycle-driven navigation after hydration completes
   useEffect(() => {

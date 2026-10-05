@@ -21,6 +21,9 @@ const TESTS_DIR = path.join(__dirname, '..', 'tests');
 const UNIT_TESTS = [
   'route-optimizer.test.js',
   'payment-unit.test.js',
+  'lifecycle-socket.test.js',
+  'client-lifecycle.test.js',
+  'socket-transport.test.js',
 ];
 
 // Parse CLI flags
@@ -66,7 +69,7 @@ for (const file of testFiles) {
     failed++;
     const stderr = err.stderr ? err.stderr.toString().trim() : '';
     const stdout = err.stdout ? err.stdout.toString().trim() : '';
-    const detail = stderr || stdout || `exit code ${err.status}`;
+    const detail = stderr || stdout || `${err.code || "test failure"} (exit code ${err.status})`;
     failures.push({ label, detail });
     console.log(`  ❌  ${label}`);
   }

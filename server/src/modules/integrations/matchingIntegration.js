@@ -2,7 +2,7 @@ const { runMatchingBatch } = require('../matching/matchingEngine');
 const { createTripFromMatch } = require('../trip/trip.service');
 const { runExpansionPhase } = require('../trip/expansion.service');
 const prisma = require('../../prisma/client');
-const { getIo } = require('../../socket/socket');
+const { lifecycleTransaction } = require('../../socket/lifecycle');
 
 /**
  * Minimum buffer (in ms) before a ride's preferredTime for it to enter the matching pool.
@@ -60,6 +60,11 @@ async function updatePendingCycles(tx, allRequests, matchedIds) {
     }
   });
 
+  return { cycleCancelled: 0, timeCancelled: 0 };
+}
+
+// Expire independently of the matching pool, which excludes past departure times.
+async function autoExpirePendingRequests(tx, changes) {
   // 🔒 STEP 2: Auto-cancel by time — preferredTime has passed
   // If the ride's departure time has already passed, no point matching
   const now = new Date();
@@ -67,7 +72,6 @@ async function updatePendingCycles(tx, allRequests, matchedIds) {
   // Find the requests we are about to cancel so we can notify the users
   const expiringRequests = await tx.rideRequest.findMany({
     where: {
-      id: { in: unmatchedIds },
       status: 'PENDING',
       preferredTime: { lt: now }
     },
@@ -80,26 +84,20 @@ async function updatePendingCycles(tx, allRequests, matchedIds) {
   
   if (expiringIds.length > 0) {
     const timeCancelled = await tx.rideRequest.updateMany({
-      where: { id: { in: expiringIds } },
+      where: { id: { in: expiringIds }, status: 'PENDING' },
       data: { status: 'CANCELLED' }
     });
     timeCancelledCount = timeCancelled.count;
 
-    // Notify the users via Socket.io
-    const io = getIo();
-    if (io) {
-      expiringRequests.forEach(req => {
-        io.to(req.userId).emit('ride_cancelled', {
-          rideRequestId: req.id,
-          reason: 'Your ride was automatically cancelled because the departure time has passed.'
-        });
-      });
+    for (const req of expiringRequests) {
+      changes.push({ rideRequestId: req.id, userIds: [req.userId], status: 'CANCELLED',
+        reason: 'Your ride was automatically cancelled because the departure time has passed.' });
     }
   }
 
   // ✅ Return counts for observability (enables debugging)
   console.log(`Auto-cancelled: time=${timeCancelledCount}`);
-  return { cycleCancelled: 0, timeCancelled: timeCancelledCount };
+  return timeCancelledCount;
 }
 
 /**
@@ -109,7 +107,7 @@ async function updatePendingCycles(tx, allRequests, matchedIds) {
  * 
  * Returns count of expired trips for observability.
  */
-async function autoExpireMatchedTrips(tx) {
+async function autoExpireMatchedTrips(tx, changes) {
   const graceCutoff = new Date(Date.now() - MATCHED_TRIP_EXPIRY_GRACE_MS);
 
   // Find RIDERS_MATCHED trips where ALL ride requests' preferredTime + grace < now
@@ -127,7 +125,6 @@ async function autoExpireMatchedTrips(tx) {
   if (staleTrips.length === 0) return 0;
 
   let cancelledCount = 0;
-  const io = getIo();
 
   for (const { id: tripId } of staleTrips) {
     // Cancel the trip
@@ -156,29 +153,8 @@ async function autoExpireMatchedTrips(tx) {
       });
     }
 
-    // Notify all riders via socket
-    if (io) {
-      for (const tu of tripUsers) {
-        io.to(tu.rideRequest.userId).emit('ride_cancelled', {
-          rideRequestId: tu.rideRequest.id,
-          reason: 'Your matched ride was automatically cancelled because the departure time has passed without a driver accepting.',
-        });
-      }
-
-      // Notify driver if assigned
-      if (driverTrip) {
-        const driverProfile = await tx.driverProfile.findUnique({
-          where: { id: driverTrip.driverProfileId },
-          select: { userId: true },
-        });
-        if (driverProfile) {
-          io.to(driverProfile.userId).emit('trip_cancelled', {
-            tripId,
-            reason: 'Trip automatically cancelled — departure time has passed.',
-          });
-        }
-      }
-    }
+    changes.push({ tripId, userIds: tripUsers.map(tu => tu.rideRequest.userId),
+      reason: 'Your matched ride was automatically cancelled because the departure time has passed without a driver accepting.' });
 
     cancelledCount++;
   }
@@ -220,13 +196,14 @@ async function runMatchingCycle(triggerType = 'CRON') {
   const startTime = Date.now();
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await lifecycleTransaction(async (tx, changes) => {
       /**
        * 🕐 STEP 0a: Auto-expire stale RIDERS_MATCHED trips
        * This must run before matching to clean up edge cases where
        * rides were matched at the current time boundary.
        */
-      const autoExpiredTrips = await autoExpireMatchedTrips(tx);
+      await autoExpireMatchedTrips(tx, changes);
+      const expiredPendingCount = await autoExpirePendingRequests(tx, changes);
 
       /**
        * 🔒 STEP 0b: Count pending at start for logging
@@ -250,7 +227,7 @@ async function runMatchingCycle(triggerType = 'CRON') {
         if (pending.length > 0) {
           const matchedIds = new Set(); // No matches found
           const { cycleCancelled, timeCancelled } = await updatePendingCycles(tx, pending, matchedIds);
-          const autoCancelledCount = cycleCancelled + timeCancelled;
+          const autoCancelledCount = expiredPendingCount + cycleCancelled + timeCancelled;
 
           const usersStillPending = await tx.rideRequest.count({
             where: { status: 'PENDING' },
@@ -275,7 +252,7 @@ async function runMatchingCycle(triggerType = 'CRON') {
           tripsCreated: 0,
           usersMatched: 0,
           usersStillPending,
-          autoCancelledCount: 0,
+          autoCancelledCount: expiredPendingCount,
           durationMs: Date.now() - startTime,
         };
       }
@@ -291,7 +268,7 @@ async function runMatchingCycle(triggerType = 'CRON') {
         // ⚠️ CRITICAL: Still increment pending_cycles for all unmatched requests
         const matchedIds = new Set(); // No matches found
         const { cycleCancelled, timeCancelled } = await updatePendingCycles(tx, pending, matchedIds);
-        const autoCancelledCount = cycleCancelled + timeCancelled;
+        const autoCancelledCount = expiredPendingCount + cycleCancelled + timeCancelled;
 
         const usersStillPending = await tx.rideRequest.count({
           where: { status: 'PENDING' },
@@ -354,7 +331,7 @@ async function runMatchingCycle(triggerType = 'CRON') {
        * ✅ STEP 4: Update pending_cycles for unmatched requests + track cancellations
        */
       const { cycleCancelled, timeCancelled } = await updatePendingCycles(tx, pending, matchedIds);
-      const autoCancelledCount = cycleCancelled + timeCancelled;
+      const autoCancelledCount = expiredPendingCount + cycleCancelled + timeCancelled;
 
       // Count remaining pending
       const usersStillPending = await tx.rideRequest.count({

@@ -1,5 +1,5 @@
 const prisma = require('../../prisma/client');
-const { getIo } = require('../../socket/socket');
+const { lifecycleTransaction, publishChanges } = require('../../socket/lifecycle');
 const { cacheGet, cacheSet, invalidateUserRideCaches,
   CACHE_CURRENT_RIDE_KEY, TTL_CURRENT_RIDE } = require('../../utils/cache');
 
@@ -36,6 +36,7 @@ exports.createRideRequest = async (userId, data) => {
   // Invalidate rider's cached state — new request is now active
   await invalidateUserRideCaches(userId);
 
+  await publishChanges([{ rideRequestId: rideRequest.id, userIds: [userId] }]);
   return rideRequest;
 }
 
@@ -146,7 +147,7 @@ exports.getCurrentRideRequest = async (userId) => {
 };
 
 exports.cancelRideRequest = async (id, userId) => {
-  return prisma.$transaction(async (tx) => {
+  return lifecycleTransaction(async (tx, changes) => {
     const request = await tx.rideRequest.findUnique({
       where: { id },
     });
@@ -178,8 +179,7 @@ exports.cancelRideRequest = async (id, userId) => {
         where: { rideRequestId: id },
       });
 
-      // Invalidate rider's cache
-      await invalidateUserRideCaches(userId);
+      changes.push({ rideRequestId: id, userIds: [userId], status: 'CANCELLED' });
       return {
         id,
         status: "CANCELLED",
@@ -275,59 +275,21 @@ exports.cancelRideRequest = async (id, userId) => {
           });
         }
 
-        // 8. Cancel DriverTrip if it exists + notify driver
+        // 8. Cancel DriverTrip if it exists
         const driverTrip = await tx.driverTrip.findUnique({ where: { tripId } });
         if (driverTrip) {
           await tx.driverTrip.update({
             where: { id: driverTrip.id },
             data: { status: 'CANCELLED' },
           });
-
-          // Notify driver via socket
-          try {
-            const io = getIo();
-            const driverProfile = await tx.driverProfile.findUnique({
-              where: { id: driverTrip.driverProfileId },
-              select: { userId: true },
-            });
-            if (driverProfile && io) {
-              io.to(driverProfile.userId).emit('trip_cancelled', {
-                tripId,
-                reason: 'A rider cancelled — the trip has been cancelled.',
-              });
-            }
-          } catch (_) {
-            // Socket notification is best-effort, don't fail the transaction
-          }
         }
 
-        // 9. Notify co-riders via socket
-        let coRiderUserIds = [];
-        try {
-          const io = getIo();
-          if (io) {
-            // Look up userIds for co-riders
-            const coRiderRequests = await tx.rideRequest.findMany({
-              where: { id: { in: coRiderIds } },
-              select: { userId: true, id: true },
-            });
-            coRiderUserIds = coRiderRequests.map(r => r.userId);
-            for (const req of coRiderRequests) {
-              io.to(req.userId).emit('ride_cancelled', {
-                rideRequestId: req.id,
-                reason: 'A co-rider cancelled — you have been re-queued for matching.',
-              });
-            }
-          }
-        } catch (_) {
-          // Socket notification is best-effort
-        }
-
-        // Invalidate caches for cancelling rider + all co-riders
-        await invalidateUserRideCaches(userId);
-        for (const coRiderUserId of coRiderUserIds) {
-          await invalidateUserRideCaches(coRiderUserId);
-        }
+        // Capture participants before their trip links are removed from the snapshot.
+        changes.push({
+          tripId,
+          userIds: tripUsers.map(tu => tu.userId),
+          reason: 'A co-rider cancelled — remaining riders have been re-queued for matching.',
+        });
 
         return {
           id,
