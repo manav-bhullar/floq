@@ -122,7 +122,7 @@ npm test              # run all tests (requires Postgres + Redis)
 npm run test:unit     # run unit tests only (no external services)
 ```
 
-- **CI:** GitHub Actions runs unit tests on every push and integration tests against Postgres 16 + Redis 7 service containers.
+- **Execution:** Run tests manually with the commands above. Automatic GitHub Actions build and test checks are disabled; Vercel handles frontend build and deployment checks.
 - **Coverage:** Unit and integration tests verify cache invalidation, Redis TTL auto-expiry, transaction integrity during cascade cancellations, and matching constraints.
 
 *Integration tests require a local PostgreSQL and Redis instance.*
