@@ -15,12 +15,14 @@ const MAX_GROUP_SIZE = 4;
  */
 function generateValidSequences(users) {
   // Pre-build stop objects for each user (avoids creating them inside recursion)
-  const userStops = users.map(u => ({
-    pickup: { type: 'pickup', userId: u.id, lat: u.pickupLat, lng: u.pickupLng },
-    drop:   { type: 'drop',   userId: u.id, lat: u.dropLat,   lng: u.dropLng },
+  // idx represents the global stop index: 0..n-1 for pickups, n..2n-1 for dropoffs.
+  const n = users.length;
+  const userStops = users.map((u, i) => ({
+    pickup: { type: 'pickup', userId: u.id, lat: u.pickupLat, lng: u.pickupLng, idx: i },
+    drop:   { type: 'drop',   userId: u.id, lat: u.dropLat,   lng: u.dropLng, idx: n + i },
   }));
 
-  const totalStops = users.length * 2;
+  const totalStops = n * 2;
   const results = [];
 
   // State tracking: arrays for performance (faster than Sets in tight recursion)
@@ -112,22 +114,6 @@ function isConnectedGroup(users, sequence) {
   }
 
   return true;
-}
-
-/**
- * Calculate total route distance
- */
-function calculateDistance(sequence) {
-  let total = 0;
-
-  for (let i = 0; i < sequence.length - 1; i++) {
-    const a = sequence[i];
-    const b = sequence[i + 1];
-
-    total += haversine(a.lat, a.lng, b.lat, b.lng);
-  }
-
-  return total;
 }
 
 /**
@@ -225,6 +211,20 @@ function optimizeRoute(users) {
 
   const validSequences = generateValidSequences(users);
 
+  // Precompute distance matrix for all possible stops
+  const n = users.length;
+  const distMatrix = [];
+  const stops = [];
+  for (let i = 0; i < n; i++) stops.push({ lat: users[i].pickupLat, lng: users[i].pickupLng });
+  for (let i = 0; i < n; i++) stops.push({ lat: users[i].dropLat, lng: users[i].dropLng });
+
+  for (let i = 0; i < stops.length; i++) {
+    distMatrix[i] = [];
+    for (let j = 0; j < stops.length; j++) {
+      distMatrix[i][j] = (i === j) ? 0 : haversine(stops[i].lat, stops[i].lng, stops[j].lat, stops[j].lng);
+    }
+  }
+
   let bestDistance = Infinity;
   let bestSequence = null;
 
@@ -233,7 +233,10 @@ function optimizeRoute(users) {
 
     if (!isConnectedGroup(users, seq)) continue;
 
-    const dist = calculateDistance(seq);
+    let dist = 0;
+    for (let i = 0; i < seq.length - 1; i++) {
+      dist += distMatrix[seq[i].idx][seq[i+1].idx];
+    }
 
     if (dist < bestDistance) {
       bestDistance = dist;
@@ -267,20 +270,7 @@ function optimizeRoute(users) {
    * Convert sequence of stops back to orderedIndices
    * Indices: 0..n-1 = pickups, n..2n-1 = dropoffs
    */
-  const n = users.length;
-  const userToIndex = {};
-  users.forEach((u, idx) => {
-    userToIndex[u.id] = idx;
-  });
-
-  const orderedIndices = bestSequence.map(stop => {
-    const userIdx = userToIndex[stop.userId];
-    if (stop.type === 'pickup') {
-      return userIdx; // 0..n-1
-    } else {
-      return n + userIdx; // n..2n-1
-    }
-  });
+  const orderedIndices = bestSequence.map(stop => stop.idx);
 
   return {
     sequence: bestSequence,
