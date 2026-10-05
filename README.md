@@ -105,7 +105,7 @@ k6 run server/load-tests/matching-scenario.js
 
 | Category | Technologies |
 |----------|-------------|
-| **Frontend** | React, Vite, Tailwind CSS (assumed based on standard Vite apps) |
+| **Frontend** | React 19, Vite 8, Tailwind CSS v4 |
 | **Backend** | Node.js, Express.js |
 | **Real-Time** | Socket.io |
 | **Database & ORM** | PostgreSQL, Prisma (`@prisma/client`) |
@@ -114,19 +114,25 @@ k6 run server/load-tests/matching-scenario.js
 | **Background Jobs** | `node-cron` |
 
 ## Testing
-The repository includes a comprehensive test suite covering the Redis integration phases, caching logic, distributed locking, and rate limiting.
+The repository includes 24 test files covering route optimization, cancellation logic, Redis integration phases (OTP, auth, caching, rate limiting, locking), and Razorpay payment flows.
 
-- **Total Tests:** 108/108 Passing (across Redis caching, OTP, Auth, Rate Limiting, and Locking phases on the `redis-implementation` branch).
+```bash
+cd server
+npm test              # run all tests (requires Postgres + Redis)
+npm run test:unit     # run unit tests only (no external services)
+```
+
+- **CI:** GitHub Actions runs unit tests on every push and integration tests against Postgres 16 + Redis 7 service containers.
 - **Coverage:** Unit and integration tests verify cache invalidation, Redis TTL auto-expiry, transaction integrity during cascade cancellations, and matching constraints.
 
-*Note: The test runner requires a local PostgreSQL instance running on port `5432` for DB-dependent tests to pass.*
+*Integration tests require a local PostgreSQL and Redis instance.*
 
 ## Setup Instructions
 
 1. **Clone and Install:**
    ```bash
-   git clone <repo-url>
-   cd car-pooling/server
+   git clone https://github.com/manav-bhullar/floq.git
+   cd floq/server
    npm install
    ```
 
@@ -137,10 +143,12 @@ The repository includes a comprehensive test suite covering the Redis integratio
    PORT=5050
    JWT_SECRET=your_secret
    JWT_REFRESH_SECRET=your_refresh_secret
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your_email
-   SMTP_PASS=your_app_password
+   EMAILJS_SERVICE_ID=your_service_id
+   EMAILJS_TEMPLATE_ID=your_template_id
+   EMAILJS_PUBLIC_KEY=your_public_key
+   EMAILJS_PRIVATE_KEY=your_private_key
+   RAZORPAY_KEY_ID=your_key_id
+   RAZORPAY_KEY_SECRET=your_key_secret
    FRONTEND_URL=http://localhost:5173
    ```
 
@@ -157,5 +165,10 @@ The repository includes a comprehensive test suite covering the Redis integratio
 
 ## Known Limitations / What I'd Improve Next
 - **Matching Engine Scaling:** Currently, the matching engine pulls pending requests in batches. If the pending pool grows massively, scoring every possible pair $O(n^2)$ will bottleneck. Next step: Implement PostGIS or Redis geospatial indexing to only score pairs within a 5km radius.
-- **Missing `run-tests.js` in `main`:** The root script `scripts/run-tests.js` is referenced in `package.json` but is currently missing on the `main` branch. 
 - **Driver Rejection Handling:** The `DriverTrip` model supports a `CANCELLED` state, but there isn't a robust mechanism to rapidly re-queue a `RIDERS_MATCHED` trip to a different driver if the first driver rejects it, leading to potential auto-expiry.
+
+## Render Deployment
+
+The root `render.yaml` provisions the Express backend, PostgreSQL, and Redis-compatible Render Key Value. The frontend stays on Vercel. Configure the prompted frontend URL, EmailJS, and Razorpay values in Render, then set Vercel `VITE_API_URL` to the backend URL followed by `/api`.
+
+The blueprint uses paid, always-on services for the matching scheduler. It generates JWT secrets and keeps both datastores private. The pre-deploy command uses `prisma db push` because the checked-in migrations do not yet cover the current schema; establish a complete migration baseline before using this blueprint for an existing database. No deployment has been performed.
