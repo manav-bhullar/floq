@@ -6,6 +6,7 @@ const adminRoutes = require('./modules/admin/admin.routes');
 const tripRoutes = require('./modules/trip/trip.routes');
 const authRoutes = require('./modules/auth/auth.routes');
 const driverRoutes = require('./modules/driver/driver.routes');
+const paymentRoutes = require('./modules/payment/payment.routes');
 const { authenticate } = require('./middleware/auth.middleware');
 const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
 
@@ -37,5 +38,6 @@ app.use('/api/ride-requests', authenticate, apiLimiter, rideRequestRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/trips', authenticate, apiLimiter, tripRoutes);
 app.use('/api/driver', apiLimiter, driverRoutes); // auth is handled inside driverRoutes
+app.use('/api/payment', authenticate, apiLimiter, paymentRoutes);
 
 module.exports = app;
