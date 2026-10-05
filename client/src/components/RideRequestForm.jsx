@@ -338,8 +338,6 @@ export default function RideRequestForm({ onLocationSelect }) {
     }
   }
 
-  const canSubmit = !!pickup && !!drop && !!preferredTime && !loading;
-
   return (
     <form className="ride-request-form" onSubmit={handleSubmit}>
       <h2 className="form-title">Request a Ride</h2>
@@ -408,13 +406,17 @@ export default function RideRequestForm({ onLocationSelect }) {
         }}
       />
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
         className="fab-extended"
         style={{ width: "100%", marginTop: "16px" }}
-        disabled={!canSubmit}
+        disabled={loading}
       >
         {loading ? "Submitting request..." : "Request Ride"}
       </button>
