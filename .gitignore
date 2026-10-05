@@ -23,6 +23,7 @@ yarn-error.log*
 # OS files
 # -----------------------------
 .DS_Store
+._*
 Thumbs.db
 
 # -----------------------------
@@ -60,3 +61,14 @@ coverage/
 # -----------------------------
 frontend docx/
 postman/
+
+Learn/
+Learn
+
+# -----------------------------
+# Agent / AI artifacts
+# -----------------------------
+.agents/
+.Jules/
+PROJECT.md
+TEST_INFRA.md
