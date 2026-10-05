@@ -125,7 +125,7 @@ exports.verifyEmail = async ({ email, otp }) => {
 
   const { code: storedCode } = JSON.parse(otpData);
 
-  if (storedCode !== otp && otp !== '123456') {
+  if (storedCode !== otp && !(process.env.NODE_ENV !== 'production' && otp === '123456')) {
     const error = new Error('Invalid OTP');
     error.status = 400;
     throw error;
