@@ -24,7 +24,7 @@ function loadRazorpayScript() {
     }
 
     const existingScript = document.querySelector(
-      script[src=https://checkout.razorpay.com/v1/checkout.js]
+      'script[src="https://checkout.razorpay.com/v1/checkout.js"]'
     );
 
     if (existingScript) {

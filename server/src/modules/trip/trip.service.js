@@ -1,3 +1,4 @@
+const { publishChanges } = require('../../socket/lifecycle');
 const prisma = require("../../prisma/client");
 const { calculateFares } = require("./trip.fare");
 const { getRoadDistances, ROAD_DETOUR_THRESHOLD } = require("./osrm");
@@ -131,7 +132,7 @@ async function createTripFromMatch(match, tx = null) {
   const result = await executor.$transaction(executeTransaction);
   // Invalidate available trips list + all newly matched riders' caches
   const userIds = users.map(u => u.userId);
-  await cacheDel(CACHE_AVAILABLE_TRIPS_KEY(), ...userIds.map(CACHE_CURRENT_TRIP_KEY));
+  await publishChanges([{ tripId: result.id, userIds }]);
   return result;
 }
 

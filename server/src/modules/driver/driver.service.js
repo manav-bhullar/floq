@@ -1,5 +1,6 @@
+const { lifecycleTransaction } = require('../../socket/lifecycle');
 const prisma = require('../../prisma/client');
-const { cacheGet, cacheSet, cacheDel, invalidateTripCaches,
+const { cacheGet, cacheSet,
   CACHE_AVAILABLE_TRIPS_KEY, CACHE_CURRENT_TRIP_KEY,
   TTL_AVAILABLE_TRIPS, TTL_CURRENT_TRIP } = require('../../utils/cache');
 
@@ -58,7 +59,7 @@ exports.getAvailableTrips = async () => {
 };
 
 exports.acceptTrip = async (userId, tripId) => {
-  return await prisma.$transaction(async (tx) => {
+  return await lifecycleTransaction(async (tx, changes) => {
     // 1. Get driver profile
     const driverProfile = await tx.driverProfile.findUnique({
       where: { userId },
@@ -120,32 +121,14 @@ exports.acceptTrip = async (userId, tripId) => {
       },
     });
 
-    // Notify riders
-    try {
-      const io = getIo();
-      if (io) {
-        trip.tripUsers.forEach(tu => {
-          io.to(tu.userId).emit('trip_updated', {
-            tripId,
-            status: 'DRIVER_MATCHED',
-            message: 'A driver has accepted your trip!'
-          });
-        });
-      }
-    } catch (err) {
-      console.warn('Socket notification failed:', err.message);
-    }
-
-    // Invalidate available_trips cache + per-rider caches
-    const riderUserIds = trip.tripUsers.map(tu => tu.userId);
-    await invalidateTripCaches(tripId, riderUserIds);
+    changes.push({ tripId, userIds: [userId, ...trip.tripUsers.map(tu => tu.userId)] });
 
     return driverTrip;
   });
 };
 
 exports.startTrip = async (userId, tripId) => {
-  return await prisma.$transaction(async (tx) => {
+  return await lifecycleTransaction(async (tx, changes) => {
     const driverProfile = await tx.driverProfile.findUnique({
       where: { userId },
     });
@@ -174,18 +157,14 @@ exports.startTrip = async (userId, tripId) => {
       throw { code: 400, message: 'Trip was concurrently modified' };
     }
 
-    // Invalidate trip caches on start
-    const startedTrip = await tx.trip.findUnique({ where: { id: tripId }, include: { tripUsers: true } });
-    if (startedTrip) {
-      await invalidateTripCaches(tripId, startedTrip.tripUsers.map(tu => tu.userId));
-    }
+    changes.push({ tripId, userIds: [userId] });
 
     return { ...driverTrip, status: 'STARTED', startedAt: new Date() };
   });
 };
 
 exports.completeTrip = async (userId, tripId) => {
-  return await prisma.$transaction(async (tx) => {
+  return await lifecycleTransaction(async (tx, changes) => {
     const driverProfile = await tx.driverProfile.findUnique({
       where: { userId },
     });
@@ -229,8 +208,7 @@ exports.completeTrip = async (userId, tripId) => {
       },
     });
 
-    // Invalidate caches on completion
-    await invalidateTripCaches(tripId, trip.tripUsers.map(tu => tu.userId));
+    changes.push({ tripId, userIds: [userId, ...trip.tripUsers.map(tu => tu.userId)] });
 
     return { ...driverTrip, status: 'COMPLETED', completedAt: now };
   });

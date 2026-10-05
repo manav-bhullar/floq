@@ -1,3 +1,4 @@
+const { lifecycleTransaction } = require('../../socket/lifecycle');
 /**
  * Expansion Service — Add riders to existing RIDERS_MATCHED trips
  * 
@@ -24,7 +25,7 @@ const LOCK_BEFORE_DEPARTURE_MS = 30 * 60 * 1000;
  * @returns {{ expanded: boolean, reason?: string, tripId?: string }}
  */
 async function tryExpandTrip(tripId, newRideRequest) {
-  return await prisma.$transaction(async (tx) => {
+  return await lifecycleTransaction(async (tx, changes) => {
 
     // ─── Step 0: Lock resources to prevent concurrent expansion ───
     // This solves the critical distributed race condition
@@ -250,6 +251,7 @@ async function tryExpandTrip(tripId, newRideRequest) {
       `Pareto check passed. New distance: ${totalRoadDistanceKm.toFixed(2)}km`
     );
 
+    changes.push({ tripId: trip.id, userIds: [...trip.tripUsers.map(tu => tu.userId), newRideRequest.userId] });
     return { expanded: true, tripId: trip.id };
   });
 }

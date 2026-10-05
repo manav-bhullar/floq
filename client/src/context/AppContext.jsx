@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, useMemo } from "react";
 import { deriveUIState } from "../utils/stateUtils";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext(null);
 
 const initialState = {
@@ -31,6 +32,20 @@ function init(initial) {
 
 function reducer(state, action) {
   switch (action.type) {
+    case "SYNC_LIFECYCLE": {
+      const { rideRequest, trip, reason } = action.payload;
+      return {
+        ...state,
+        rideRequest,
+        trip,
+        uiState: deriveUIState(rideRequest, trip),
+        loading: { ...state.loading, init: false },
+        isInitializing: false,
+        notification: reason ? { type: "warning", message: reason } :
+          (state.notification?.type === "error" ? null : state.notification),
+      };
+    }
+
     case "INIT_COMPLETE": {
       const { rideRequest, trip } = action.payload;
 
