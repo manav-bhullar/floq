@@ -70,6 +70,7 @@ export default function StatusBanner() {
       <button
         className="status-banner-close"
         onClick={() => dispatch({ type: "CLEAR_NOTIFICATION" })}
+        aria-label="Close notification"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

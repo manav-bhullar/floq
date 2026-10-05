@@ -1,0 +1,3 @@
+## 2025-05-15 - Improve OTP Accessibility and Form UX
+**Learning:** For dynamic mapped inputs like OTP fields, dynamically generating `aria-label`s provides critical positional context for screen reader users (e.g., `Digit 1 of 6`). Additionally, disabling form submit buttons based on missing fields is an anti-pattern as it prevents users from triggering validation and receiving necessary, contextually spoken error feedback.
+**Action:** Always map sequential inputs with positional `aria-label` attributes. Keep submit buttons enabled (except during loading states) to let validation scripts handle missing fields and generate errors that can be announced dynamically using `role="alert"` and `aria-live="assertive"`.
