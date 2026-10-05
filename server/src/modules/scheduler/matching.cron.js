@@ -1,7 +1,14 @@
 const cron = require('node-cron');
 const { runMatchingCycle } = require('../integrations/matchingIntegration');
+const { acquireLock, releaseLock } = require('../../utils/lock');
 
-let isRunning = false;
+// Distributed lock key — shared across all instances/processes
+const MATCHING_LOCK_KEY = 'matching:cron:lock';
+
+// Lock TTL must be comfortably longer than the worst-case cycle time.
+// If a process crashes mid-cycle, Redis auto-releases the lock after this.
+const MATCHING_LOCK_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 let schedulerStarted = false;
 
 function startMatchingScheduler() {
@@ -10,24 +17,40 @@ function startMatchingScheduler() {
     return;
   }
   schedulerStarted = true;
+
   cron.schedule('*/45 * * * * *', async () => {
-    if (isRunning) {
-      console.log('⏭️ Skipping overlapping batch');
-      return;
-    }
+    let lock = null;
     try {
-      isRunning = true;
+      // Attempt to acquire the distributed lock — fails instantly if held
+      lock = await acquireLock(MATCHING_LOCK_KEY, MATCHING_LOCK_TTL_MS);
+
+      if (!lock) {
+        console.log('⏭️  Skipping overlapping batch — another instance holds the lock');
+        return;
+      }
+
       console.log('🚀 Running matching batch...');
       const metrics = await runMatchingCycle('CRON');
-      // Log batch metrics
-      console.log(`✅ Matching batch completed | tripsCreated=${metrics.tripsCreated} usersMatched=${metrics.usersMatched} pendingRemaining=${metrics.usersStillPending} autoCancelled=${metrics.autoCancelledCount} durationMs=${metrics.durationMs}`);
+
+      console.log(
+        `✅ Matching batch completed | tripsCreated=${metrics.tripsCreated} ` +
+        `usersMatched=${metrics.usersMatched} pendingRemaining=${metrics.usersStillPending} ` +
+        `autoCancelled=${metrics.autoCancelledCount} durationMs=${metrics.durationMs}`
+      );
     } catch (err) {
       console.error('❌ Matching batch failed:', err);
     } finally {
-      isRunning = false;
+      // Always release the lock, even if the batch threw
+      if (lock) {
+        const released = await releaseLock(lock);
+        if (!released) {
+          console.warn('⚠️ Lock already expired before release — cycle took longer than TTL');
+        }
+      }
     }
   });
-  console.log(`✅ Matching scheduler started`);
+
+  console.log(`✅ Matching scheduler started (distributed lock: ${MATCHING_LOCK_KEY})`);
 }
 
 module.exports = {
