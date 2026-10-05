@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "node scripts/run-tests.js",
+    "test:unit": "node scripts/run-tests.js --unit",
     "test:e2e": "node tests/e2e.test.js",
     "db:reset": "node scripts/reset-db.js",
     "db:inspect": "node scripts/inspect-db.js"
