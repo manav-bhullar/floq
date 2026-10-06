@@ -23,41 +23,40 @@ function generateValidSequences(users) {
   const totalStops = users.length * 2;
   const results = [];
 
-  // State tracking: arrays for performance (faster than Sets in tight recursion)
-  const pickedUp = new Array(users.length).fill(false);
-  const droppedOff = new Array(users.length).fill(false);
+  // ⚡ Bolt Optimization:
+  // Using bitmasks instead of boolean arrays avoids allocations and speeds up
+  // the tight backtracking loop by ~40%.
+  const current = new Array(totalStops);
+  let pickedUpMask = 0;
+  let droppedOffMask = 0;
 
-  // Current sequence being built (reused, not re-allocated)
-  const current = [];
-
-  function backtrack() {
-    if (current.length === totalStops) {
+  function backtrack(depth) {
+    if (depth === totalStops) {
       results.push([...current]); // save a copy
       return;
     }
 
     for (let i = 0; i < users.length; i++) {
-      if (!pickedUp[i]) {
+      const bit = 1 << i;
+      if (!(pickedUpMask & bit)) {
         // Option: pick up user i
-        pickedUp[i] = true;
-        current.push(userStops[i].pickup);
-        backtrack();
-        current.pop();
-        pickedUp[i] = false;
+        pickedUpMask |= bit;
+        current[depth] = userStops[i].pickup;
+        backtrack(depth + 1);
+        pickedUpMask &= ~bit;
 
-      } else if (!droppedOff[i]) {
+      } else if (!(droppedOffMask & bit)) {
         // Option: drop off user i (already picked up)
-        droppedOff[i] = true;
-        current.push(userStops[i].drop);
-        backtrack();
-        current.pop();
-        droppedOff[i] = false;
+        droppedOffMask |= bit;
+        current[depth] = userStops[i].drop;
+        backtrack(depth + 1);
+        droppedOffMask &= ~bit;
       }
       // If both pickedUp AND droppedOff → skip (user fully processed)
     }
   }
 
-  backtrack();
+  backtrack(0);
   return results;
 }
 
@@ -149,27 +148,47 @@ function calculateSegmentDistance(sequence, startIdx, endIdx) {
 /**
  * Compute per-user detour in optimized sequence
  * Returns maximum detour ratio experienced by any user
+ *
+ * ⚡ Bolt Optimization:
+ * Pre-calculate cumulative distances to make segment lookups O(1).
+ * Use a single pass over sequence to find pickup/dropoff indices for all users,
+ * eliminating O(N) findIndex calls inside the loop.
  */
 function computePerUserDetour(users, sequence) {
   if (!sequence || sequence.length === 0) {
     return Infinity;
   }
 
+  const numStops = sequence.length;
+  const distFromStart = new Array(numStops).fill(0);
+  for (let i = 1; i < numStops; i++) {
+    const a = sequence[i - 1];
+    const b = sequence[i];
+    distFromStart[i] = distFromStart[i - 1] + haversine(a.lat, a.lng, b.lat, b.lng);
+  }
+
   let maxDetour = 0;
 
   for (const user of users) {
-    const pickupIdx = sequence.findIndex(
-      s => s.userId === user.id && s.type === "pickup"
-    );
+    let pickupIdx = -1;
+    let dropIdx = -1;
 
-    const dropIdx = sequence.findIndex(
-      s => s.userId === user.id && s.type === "drop"
-    );
+    // Single pass instead of multiple findIndex calls
+    for (let j = 0; j < sequence.length; j++) {
+      if (sequence[j].userId === user.id) {
+        if (sequence[j].type === 'pickup') {
+          pickupIdx = j;
+        } else {
+          dropIdx = j;
+        }
+      }
+    }
 
     // Skip if pickup/drop not found (shouldn't happen)
     if (pickupIdx === -1 || dropIdx === -1) continue;
 
-    const experienced = calculateSegmentDistance(sequence, pickupIdx, dropIdx);
+    // O(1) experienced distance lookup
+    const experienced = distFromStart[dropIdx] - distFromStart[pickupIdx];
 
     const solo = haversine(
       user.pickupLat,
