@@ -223,17 +223,55 @@ function optimizeRoute(users) {
     throw new Error(`Group size ${users.length} exceeds MAX_GROUP_SIZE ${MAX_GROUP_SIZE}`);
   }
 
+  // ⚡ Bolt Optimization: Pre-compute distance matrix to avoid redundant haversine math
+  // For 4 users (8 stops), there are 64 possible segments.
+  // We compute them once and store in a Float64Array for fast access
+  const numStops = users.length * 2;
+  const distMatrix = new Float64Array(numStops * numStops);
+  const lats = new Float64Array(numStops);
+  const lngs = new Float64Array(numStops);
+
+  // 0 to n-1: Pickups
+  // n to 2n-1: Dropoffs
+  users.forEach((u, i) => {
+      lats[i] = u.pickupLat;
+      lngs[i] = u.pickupLng;
+      lats[users.length + i] = u.dropLat;
+      lngs[users.length + i] = u.dropLng;
+  });
+
+  for (let i = 0; i < numStops; i++) {
+    for (let j = 0; j < numStops; j++) {
+      distMatrix[i * numStops + j] = haversine(lats[i], lngs[i], lats[j], lngs[j]);
+    }
+  }
+
   const validSequences = generateValidSequences(users);
 
   let bestDistance = Infinity;
   let bestSequence = null;
+
+  // We need a fast way to map a user/type back to an index
+  const fastUserToIndex = {};
+  users.forEach((u, idx) => {
+    fastUserToIndex[u.id] = idx;
+  });
 
   for (const seq of validSequences) {
     // No isValidSequence check needed — all sequences are valid by construction
 
     if (!isConnectedGroup(users, seq)) continue;
 
-    const dist = calculateDistance(seq);
+    let dist = 0;
+    for (let i = 0; i < seq.length - 1; i++) {
+      const a = seq[i];
+      const b = seq[i + 1];
+
+      const aIdx = a.type === 'pickup' ? fastUserToIndex[a.userId] : users.length + fastUserToIndex[a.userId];
+      const bIdx = b.type === 'pickup' ? fastUserToIndex[b.userId] : users.length + fastUserToIndex[b.userId];
+
+      dist += distMatrix[aIdx * numStops + bIdx];
+    }
 
     if (dist < bestDistance) {
       bestDistance = dist;
