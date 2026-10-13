@@ -48,7 +48,7 @@ export default function LoginPage() {
             <p>Sign in to floq</p>
           </div>
 
-          {error && <div className="auth-error">{error}</div>}
+          {error && <div className="auth-error" role="alert" aria-live="assertive">{error}</div>}
 
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
