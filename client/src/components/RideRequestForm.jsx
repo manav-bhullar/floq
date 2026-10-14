@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useId } from "react";
 import { useApp } from "../context/AppContext";
 
 import { createRideRequest, getRideRequests } from "../api/rideRequests";
@@ -28,6 +28,7 @@ function LocationInput({
   allowCurrentLocation,
   referenceLocation,
 }) {
+  const inputId = useId();
   const [query, setQuery] = useState(value?.displayName || "");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -156,8 +157,9 @@ function LocationInput({
   return (
     <div className="location-input-wrapper" ref={wrapperRef}>
       <div className="md3-input-group" style={{ position: "relative" }}>
-        <label className="md3-label">{label}</label>
+        <label htmlFor={inputId} className="md3-label">{label}</label>
         <input
+          id={inputId}
           className="md3-input"
           style={allowCurrentLocation ? { paddingRight: "48px" } : {}}
           type="text"
@@ -338,8 +340,6 @@ export default function RideRequestForm({ onLocationSelect }) {
     }
   }
 
-  const canSubmit = !!pickup && !!drop && !!preferredTime && !loading;
-
   return (
     <form className="ride-request-form" onSubmit={handleSubmit}>
       <h2 className="form-title">Request a Ride</h2>
@@ -408,13 +408,13 @@ export default function RideRequestForm({ onLocationSelect }) {
         }}
       />
 
-      {error && <p className="form-error">{error}</p>}
+      {error && <p className="form-error" role="alert" aria-live="assertive">{error}</p>}
 
       <button
         type="submit"
         className="fab-extended"
         style={{ width: "100%", marginTop: "16px" }}
-        disabled={!canSubmit}
+        disabled={loading}
       >
         {loading ? "Submitting request..." : "Request Ride"}
       </button>
