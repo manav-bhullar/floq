@@ -408,7 +408,11 @@ export default function RideRequestForm({ onLocationSelect }) {
         }}
       />
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <p className="form-error" role="alert" aria-live="assertive">
+          {error}
+        </p>
+      )}
 
       <button
         type="submit"
